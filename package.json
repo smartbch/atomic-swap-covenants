@@ -1,0 +1,25 @@
+{
+  "type": "module",
+  "name": "htlc-bch",
+  "version": "1.0.0",
+  "description": "HTLC covenant in CashScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "zxh0",
+  "license": "ISC",
+  "devDependencies": {
+    "@tsconfig/node19": "^2.0.1",
+    "@types/node": "^20.2.1",
+    "@types/yargs": "^17.0.24",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.1",
+    "yargs": "^17.7.2"
+  },
+  "dependencies": {
+    "@mainnet-cash/contract": "^1.1.28",
+    "mainnet-js": "^1.1.28",
+    "ethers": "^5.7.0"
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "extends": "@tsconfig/node19/tsconfig.json",
+    "compilerOptions": {
+      "module": "ES2022",
+      "outDir": "./dist",
+    },
+    "include": ["lib"],
+    "exclude": ["node_modules"],
+    "ts-node": {
+      "esm": true,
+      "experimentalSpecifierResolution": "node",
+    }
+  }
+  
