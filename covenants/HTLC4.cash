@@ -1,0 +1,54 @@
+pragma cashscript ^0.8.0;
+
+// Hash Time Locked Contract v4
+contract HTLC(bytes20 senderPKH,
+              bytes20 recipientPKH,
+              bytes32 secretLock,
+              int expiration,
+              int penaltyBPS) {
+
+    // receive by recipient
+    function receive(sig recipientSig, pubkey recipientPK, bytes32 secret) {
+        require(this.activeInputIndex == 0);
+        require(sha256(secret) == secretLock);
+
+        if (recipientSig.length > 0) {
+            require(hash160(recipientPK) == recipientPKH);
+            require(checkSig(recipientSig, recipientPK));
+        } else {
+            bytes recipientLock = new LockingBytecodeP2PKH(recipientPKH);
+            require(tx.outputs[0].lockingBytecode == recipientLock);
+            require(tx.outputs[0].value == tx.inputs[0].value);
+        }
+    }
+
+    // refund by sender
+    function refund(sig senderSig, pubkey senderPK) {
+        require(this.activeInputIndex == 0);
+        require(tx.age >= expiration);
+
+        int lockedVal = tx.inputs[0].value;
+        int refundVal = lockedVal;
+        int penalty = 0;
+
+        // give some of the fund to the recipient
+        if (penaltyBPS > 0) {
+            penalty = lockedVal * penaltyBPS / 10000;
+            refundVal = lockedVal - penalty;
+
+            bytes recipientLock = new LockingBytecodeP2PKH(recipientPKH);
+            require(tx.outputs[1].lockingBytecode == recipientLock);
+            require(tx.outputs[1].value >= penalty);
+        }
+
+        if (senderSig.length > 0) {
+            require(hash160(senderPK) == senderPKH);
+            require(checkSig(senderSig, senderPK));
+        } else {
+            bytes senderLock = new LockingBytecodeP2PKH(senderPKH);
+            require(tx.outputs[0].lockingBytecode == senderLock);
+            require(tx.outputs[0].value == refundVal);
+        }
+    }
+
+}
