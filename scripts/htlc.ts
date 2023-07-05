@@ -12,8 +12,8 @@ if (!process.env.MAINNET) {
   _Wallet = TestNetWallet;
 }
 
-DefaultProvider.servers.testnet = ["wss://chipnet.imaginary.cash:50004"]
-
+// DefaultProvider.servers.testnet = ["wss://chipnet.imaginary.cash:50004"];
+DefaultProvider.servers.testnet = ["wss://chipnet.bch.ninja:50004"];
 
 yargs(hideBin(process.argv))
   .command('gen-user', 'gen random user', (yargs) => {

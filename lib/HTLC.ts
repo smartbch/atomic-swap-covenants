@@ -15,11 +15,11 @@ import {
   recipientToReq,
 } from "./common";
 
-// ../covenants/HTLC3.cash
-const htlc3 = `
+// ../covenants/HTLC4.cash
+const htlc4 = `
 pragma cashscript ^0.8.0;
 
-// Hash Time Locked Contract
+// Hash Time Locked Contract v4
 contract HTLC(bytes20 senderPKH,
               bytes20 recipientPKH,
               bytes32 secretLock,
@@ -28,38 +28,45 @@ contract HTLC(bytes20 senderPKH,
 
     // receive by recipient
     function receive(sig recipientSig, pubkey recipientPK, bytes32 secret) {
+        require(this.activeInputIndex == 0);
+        require(sha256(secret) == secretLock);
+
         if (recipientSig.length > 0) {
             require(hash160(recipientPK) == recipientPKH);
             require(checkSig(recipientSig, recipientPK));
         } else {
             bytes recipientLock = new LockingBytecodeP2PKH(recipientPKH);
-            require(tx.inputs[1].lockingBytecode == recipientLock);
+            require(tx.outputs[0].lockingBytecode == recipientLock);
+            require(tx.outputs[0].value >= tx.inputs[0].value);
         }
-
-        require(this.activeInputIndex == 0);
-        require(sha256(secret) == secretLock);
-        // require(tx.age >= expiration);
     }
 
     // refund by sender
     function refund(sig senderSig, pubkey senderPK) {
+        require(this.activeInputIndex == 0);
+        require(tx.age >= expiration);
+
+        int lockedVal = tx.inputs[0].value;
+        int refundVal = lockedVal;
+        int penalty = 0;
+
+        // give some of the fund to the recipient
+        if (penaltyBPS > 0) {
+            penalty = lockedVal * penaltyBPS / 10000;
+            refundVal = lockedVal - penalty;
+
+            bytes recipientLock = new LockingBytecodeP2PKH(recipientPKH);
+            require(tx.outputs[1].lockingBytecode == recipientLock);
+            require(tx.outputs[1].value >= penalty);
+        }
+
         if (senderSig.length > 0) {
             require(hash160(senderPK) == senderPKH);
             require(checkSig(senderSig, senderPK));
         } else {
             bytes senderLock = new LockingBytecodeP2PKH(senderPKH);
-            require(tx.inputs[1].lockingBytecode == senderLock);
-        }
-
-        require(this.activeInputIndex == 0);
-        require(tx.age >= expiration);
-
-        // give some of the fund to the recipient
-        if (penaltyBPS > 0) {
-            int penalty = tx.inputs[0].value * penaltyBPS / 10000;
-            require(tx.outputs[0].value >= penalty);
-            bytes recipientLock = new LockingBytecodeP2PKH(recipientPKH);
-            require(tx.outputs[0].lockingBytecode == recipientLock);
+            require(tx.outputs[0].lockingBytecode == senderLock);
+            require(tx.outputs[0].value >= refundVal);
         }
     }
 
@@ -101,7 +108,7 @@ export class HTLC {
                  recipientPkh: string,
                  hashLock    : string,) {
     const args = [senderPkh, recipientPkh, hashLock, this.expiration, this.penaltyBPS];
-    return new Contract(htlc3, args, this.wallet.network);
+    return new Contract(htlc4, args, this.wallet.network);
   }
 
   async send(toCashAddr: string,
@@ -158,22 +165,22 @@ export class HTLC {
 
     const txFee = 1000
     const myUtxos = await this.wallet.getUtxos();
-    const sigUtxo = myUtxos
+    const feeUtxo = myUtxos
       .filter(x => !x.token) // no token
       .find(x => x.satoshis > 1000); // have enough value
-    if (!sigUtxo) {
-      throw new Error("sig UTXO not found !");
+    if (!feeUtxo) {
+      throw new Error("fee UTXO not found !");
     }
-    console.log('sigUtxo:', sigUtxo);
+    console.log('feeUtxo:', feeUtxo);
 
-    const inputs = [lockedUtxo, sigUtxo];
-    const csInputs = [mnUtxoToCSUtxo(lockedUtxo), mnUtxoToCSUtxo(sigUtxo)];
+    const inputs = [lockedUtxo, feeUtxo];
+    const csInputs = [mnUtxoToCSUtxo(lockedUtxo), mnUtxoToCSUtxo(feeUtxo)];
     (csInputs[1] as SignableUtxo).template = buildUnsigned
       ? getSignatureTemplate(await Wallet.newRandom())
       : getSignatureTemplate(this.wallet);
     console.log('csInputs:', csInputs);
 
-    const gotAmt = sigUtxo.satoshis + lockedUtxo.satoshis - txFee;
+    const gotAmt = feeUtxo.satoshis + lockedUtxo.satoshis - txFee;
     const csOutputs = [
       createRecipient(this.wallet.getDepositAddress(), Number(gotAmt))
     ];
@@ -226,24 +233,24 @@ export class HTLC {
     }
     const txFee = 1000
     const myUtxos = await this.wallet.getUtxos();
-    const sigUtxo = myUtxos
+    const feeUtxo = myUtxos
       .filter(x => !x.token) // no token
       .find(x => x.satoshis > 1000); // have enough value
-    if (!sigUtxo) {
+    if (!feeUtxo) {
       throw new Error("sig UTXO not found !")
     }
 
-    const refunded = sigUtxo.satoshis + lockedUtxo.satoshis - penalty - txFee;
+    const refunded = feeUtxo.satoshis + lockedUtxo.satoshis - penalty - txFee;
 
-    const inputs = [lockedUtxo, sigUtxo];
-    const csInputs = [mnUtxoToCSUtxo(lockedUtxo), mnUtxoToCSUtxo(sigUtxo)];
+    const inputs = [lockedUtxo, feeUtxo];
+    const csInputs = [mnUtxoToCSUtxo(lockedUtxo), mnUtxoToCSUtxo(feeUtxo)];
     (csInputs[1] as SignableUtxo).template = buildUnsigned
       ? getSignatureTemplate(await Wallet.newRandom())
       : getSignatureTemplate(this.wallet);
 
     const csOutputs = [
-      createRecipient(pkhToCashAddr(recipientPkh.replace("0x", ''), this.wallet.network), penalty),
       createRecipient(this.wallet.getDepositAddress(), Number(refunded)),
+      createRecipient(pkhToCashAddr(recipientPkh.replace("0x", ''), this.wallet.network), penalty),
     ];
 
     const fn = contract!.getContractFunction("refund");
