@@ -51,12 +51,12 @@ yargs(hideBin(process.argv))
       .option('penalty-bps',   {type: 'number', required: false, default: 500, description: 'penalty ratio, in BPS'})
       .option('sbch-addr',     {type: 'string', required: true,                description: '20-bytes, hex'        })
       .option('amt',           {type: 'number', required: true,                description: 'in sats'              })
-      .option('txfee',         {type: 'number', required: false, default:2000, description: 'in sats'              })
+      .option('miner-fee',     {type: 'number', required: false, default:2000, description: 'in sats'              })
       .option('unsigned',      {type: 'boolean',required: false, default: false,                                   })
       ;
   }, async (argv: any) => {
     await send(argv.senderWif, argv.recipientAddr, argv.secret, argv.expiration, argv.penaltyBps, argv.sbchAddr,
-        argv.amt, argv.txfee, argv.unsigned);
+        argv.amt, argv.minerFee, argv.unsigned);
     process.exit(0);
   })
   .command('receive', 'unlock BCH from HTLC', (yargs: any) => {
@@ -66,12 +66,12 @@ yargs(hideBin(process.argv))
       .option('secret',        {type: 'string', required: true,                                                    })
       .option('expiration',    {type: 'number', required: false, default: 36,  description: 'in blocks'            })
       .option('penalty-bps',   {type: 'number', required: false, default: 500, description: 'penalty ratio, in BPS'})
-      .option('txfee',         {type: 'number', required: false, default:2000, description: 'in sats'              })
-      .option('unsigned',      {type: 'boolean',required: false, default: false,                                   })
+      .option('miner-fee',     {type: 'number', required: false, default:2000, description: 'in sats'              })
+      .option('dry-run',       {type: 'boolean',required: false, default: false,                                   })
       ;
   }, async (argv: any) => {
     await receive(argv.recipientWif, argv.senderAddr, argv.secret, argv.expiration, argv.penaltyBps,
-        argv.txfee, argv.unsigned);
+        argv.minerFee, argv.dryRun);
     process.exit(0);
   })
   .command('refund', 'refund BCH from HTLC', (yargs: any) => {
@@ -81,12 +81,12 @@ yargs(hideBin(process.argv))
       .option('secret',        {type: 'string', required: true,                                                    })
       .option('expiration',    {type: 'number', required: false, default: 36,  description: 'in blocks'            })
       .option('penalty-bps',   {type: 'number', required: false, default: 500, description: 'penalty ratio, in BPS'})
-      .option('txfee',         {type: 'number', required: false, default:2000, description: 'in sats'              })
-      .option('unsigned',      {type: 'boolean',required: false, default: false,                                   })
+      .option('miner-fee',     {type: 'number', required: false, default:2000, description: 'in sats'              })
+      .option('dry-run',       {type: 'boolean',required: false, default: false,                                   })
       ;
   }, async (argv: any) => {
     await refund(argv.senderWif, argv.recipientAddr, argv.secret, argv.expiration, argv.penaltyBps,
-      argv.txfee, argv.unsigned);
+      argv.minerFee, argv.dryRun);
     process.exit(0);
   })
   .strictCommands()
@@ -167,11 +167,11 @@ async function receive(recipientWIF: string,
                        expiration  : number,
                        penaltyBPS  : number,
                        minerFee    : number,
-                       unsigned    : boolean) {
+                       dryRun      : boolean) {
   const wallet = await _Wallet.fromWIF(recipientWIF);
   const htlc = new HTLC(wallet, expiration, penaltyBPS);
   const secretHex = getSecretHex(secret);
-  const result = await htlc.receive(senderAddr, secretHex, unsigned);
+  const result = await htlc.receive(senderAddr, secretHex, minerFee, dryRun);
   console.log('result:', result);
 }
 
@@ -182,11 +182,11 @@ async function refund(senderWIF    : string,
                       expiration   : number,
                       penaltyBPS   : number,
                       minerFee     : number,
-                      unsigned     : boolean) {
+                      dryRun       : boolean) {
   const wallet = await _Wallet.fromWIF(senderWIF);
   const htlc = new HTLC(wallet, expiration, penaltyBPS);
   const hashLock = getHashLock(secret);
-  const result = await htlc.refund(recipientAddr, hashLock, unsigned);
+  const result = await htlc.refund(recipientAddr, hashLock, minerFee, dryRun);
   console.log('result:', result);
 }
 

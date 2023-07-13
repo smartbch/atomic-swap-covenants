@@ -79,7 +79,7 @@ ts-node scripts/htlc.ts send \
   --amt=5000 \
   --sbch-addr=0x621e0B041D19B6472B1e991fE53D78aF3C264FA8 \
   --utxo=d9d2e5aa26c89713783f3a9422fdd15cab715fe429f581b0c19b1f8fe1f39e21:2 \
-  --txfee=1000 \
+  --miner-fee=1000 \
   --unsigned=true
 ```
 
@@ -96,8 +96,8 @@ ts-node scripts/htlc.ts receive \
   --secret=123 \
   --expiration=36 \
   --penalty-bps=500 \
-  --txfee=1000 \
-  --unsigned=true
+  --miner-fee=1000 \
+  --dry-run=true
 ```
 
 
@@ -113,7 +113,7 @@ ts-node scripts/htlc.ts refund \
   --secret=123 \
   --expiration=36 \
   --penalty-bps=500 \
-  --txfee=1000 \
-  --unsigned=true
+  --miner-fee=1000 \
+  --dry-run=true
 ```
 
