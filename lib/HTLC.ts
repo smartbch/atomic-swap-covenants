@@ -37,7 +37,7 @@ contract HTLC(bytes20 senderPKH,
         } else {
             bytes recipientLock = new LockingBytecodeP2PKH(recipientPKH);
             require(tx.outputs[0].lockingBytecode == recipientLock);
-            require(tx.outputs[0].value >= tx.inputs[0].value);
+            require(tx.outputs[0].value >= tx.inputs[0].value - 2000);
         }
     }
 
@@ -66,7 +66,7 @@ contract HTLC(bytes20 senderPKH,
         } else {
             bytes senderLock = new LockingBytecodeP2PKH(senderPKH);
             require(tx.outputs[0].lockingBytecode == senderLock);
-            require(tx.outputs[0].value >= refundVal);
+            require(tx.outputs[0].value >= refundVal - 2000);
         }
     }
 
