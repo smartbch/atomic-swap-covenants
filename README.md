@@ -21,7 +21,7 @@ npm i
 ## Print HTLC redeem script (without constructor args)
 
 ```bash
-cashc --hex covenants/HTLC3.cash
+cashc --hex covenants/HTLC5.cash
 ```
 
 
@@ -78,7 +78,6 @@ ts-node scripts/htlc.ts send \
   --penalty-bps=500 \
   --amt=5000 \
   --sbch-addr=0x621e0B041D19B6472B1e991fE53D78aF3C264FA8 \
-  --utxo=d9d2e5aa26c89713783f3a9422fdd15cab715fe429f581b0c19b1f8fe1f39e21:2 \
   --miner-fee=1000 \
   --unsigned=true
 ```
