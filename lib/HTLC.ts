@@ -202,7 +202,7 @@ export class HTLC {
     console.log('outputs:', outputs);
 
     const fn = contract!.getContractFunction("refund");
-    const builder = fn("", "")
+    const builder = fn()
       .from([input])
       .to(outputs)
       .withHardcodedFee(BigInt(minerFee));
