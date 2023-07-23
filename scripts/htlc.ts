@@ -42,7 +42,7 @@ yargs(hideBin(process.argv))
     await printHtlcInfo(argv.senderAddr, argv.recipientAddr, argv.secret, argv.expiration, argv.penaltyBps);
     process.exit(0);
   })
-  .command('send', 'send BCH to HTLC', (yargs: any) => {
+  .command('lock', 'lock BCH to HTLC', (yargs: any) => {
     return yargs
       .option('sender-wif',    {type: 'string', required: true,                                                    })
       .option('recipient-addr',{type: 'string', required: true,                description: 'cash address'         })
@@ -55,11 +55,11 @@ yargs(hideBin(process.argv))
       .option('unsigned',      {type: 'boolean',required: false, default: false,                                   })
       ;
   }, async (argv: any) => {
-    await send(argv.senderWif, argv.recipientAddr, argv.secret, argv.expiration, argv.penaltyBps, argv.sbchAddr,
+    await lock(argv.senderWif, argv.recipientAddr, argv.secret, argv.expiration, argv.penaltyBps, argv.sbchAddr,
         argv.amt, argv.minerFee, argv.unsigned);
     process.exit(0);
   })
-  .command('receive', 'unlock BCH from HTLC', (yargs: any) => {
+  .command('unlock', 'unlock BCH from HTLC', (yargs: any) => {
     return yargs
       .option('recipient-wif', {type: 'string', required: true,                description: '20-bytes, hex'        })
       .option('sender-addr',   {type: 'string', required: true,                description: 'cash address'         })
@@ -70,7 +70,7 @@ yargs(hideBin(process.argv))
       .option('dry-run',       {type: 'boolean',required: false, default: false,                                   })
       ;
   }, async (argv: any) => {
-    await receive(argv.recipientWif, argv.senderAddr, argv.secret, argv.expiration, argv.penaltyBps,
+    await unlock(argv.recipientWif, argv.senderAddr, argv.secret, argv.expiration, argv.penaltyBps,
         argv.minerFee, argv.dryRun);
     process.exit(0);
   })
@@ -144,7 +144,7 @@ async function printHtlcInfo(senderAddr   : string,
 }
 
 // lock BCH to HTLC covenant
-async function send(senderWIF    : string,
+async function lock(senderWIF    : string,
                     recipientAddr: string,
                     secret       : string,
                     expiration   : number,
@@ -156,22 +156,22 @@ async function send(senderWIF    : string,
   const wallet = await _Wallet.fromWIF(senderWIF);
   const htlc = new HTLC(wallet, expiration, penaltyBPS);
   const hashLock = getHashLock(secret);
-  const result = await htlc.send(recipientAddr, sbchAddr, hashLock, amt, unsigned);
+  const result = await htlc.lock(recipientAddr, sbchAddr, hashLock, amt, unsigned);
   console.log('result:', result);
 }
 
 // unlock BCH from HTLC covenant
-async function receive(recipientWIF: string,
-                       senderAddr  : string,
-                       secret      : string,
-                       expiration  : number,
-                       penaltyBPS  : number,
-                       minerFee    : number,
-                       dryRun      : boolean) {
+async function unlock(recipientWIF: string,
+                      senderAddr  : string,
+                      secret      : string,
+                      expiration  : number,
+                      penaltyBPS  : number,
+                      minerFee    : number,
+                      dryRun      : boolean) {
   const wallet = await _Wallet.fromWIF(recipientWIF);
   const htlc = new HTLC(wallet, expiration, penaltyBPS);
   const secretHex = getSecretHex(secret);
-  const result = await htlc.receive(senderAddr, secretHex, minerFee, dryRun);
+  const result = await htlc.unlock(senderAddr, secretHex, minerFee, dryRun);
   console.log('result:', result);
 }
 

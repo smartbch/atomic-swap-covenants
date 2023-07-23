@@ -70,7 +70,7 @@ ts-node scripts/htlc.ts htlc \
 Example:
 
 ```bash
-ts-node scripts/htlc.ts send \
+ts-node scripts/htlc.ts lock \
   --sender-wif=cPoiXWwPS9Xtvoe6DJ2CMmCiaJqUDPKX1vBRsaQNA6C9HKwBTxte \
   --recipient-addr=bchtest:qzf2nglh7zaatd4xdw2ahp540hnzw77yjymjgxkj0w \
   --secret=123 \
@@ -89,7 +89,7 @@ ts-node scripts/htlc.ts send \
 Example:
 
 ```bash
-ts-node scripts/htlc.ts receive \
+ts-node scripts/htlc.ts unlock \
   --recipient-wif=cUw45Hq2UkDYqYWz9JwMJGJuhETFWFN4AAY87WffFRSD8aAV9dZy \
   --sender-addr=bchtest:qz9hn65eumzpsam2njwjchwqwj6yqny22uzluhy5d0 \
   --secret=123 \
