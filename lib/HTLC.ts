@@ -9,6 +9,7 @@ import {
   createRecipient,
   createUnsignedTx,
   encodeBE2,
+  encodeBE8,
   mnUtxoToCSUtxo,
 } from "./common";
 
@@ -72,13 +73,14 @@ export class HTLC {
     return Buffer.from(sha256.hash(secretData)).toString('hex');
   }
 
-  // OP_RETURN "SBAS" <recipient pkh> <sender pkh> <hash lock> <expiration> <penalty bps> <sbch user address>
-  static makeOpRetData(senderPkh   : string,
-                       recipientPkh: string,
-                       hashLock    : string,
-                       expiration  : number,
-                       penaltyBPS  : number,
-                       sbchAddr    : string) {
+  // OP_RETURN "SBAS" <recipient pkh> <sender pkh> <hash lock> <expiration> <penalty bps> <sbch user address> <expected price>
+  static makeOpRetData(senderPkh    : string,
+                       recipientPkh : string,
+                       hashLock     : string,
+                       expiration   : number,
+                       penaltyBPS   : number,
+                       sbchAddr     : string,
+                       expectedPrice: number) {
     return Buffer.concat([
       // Buffer.from([0x6a]), // OP_RETURN
       Buffer.from([ 4]), Buffer.from("SBAS"),
@@ -88,6 +90,7 @@ export class HTLC {
       Buffer.from([ 2]), encodeBE2(expiration),
       Buffer.from([ 2]), encodeBE2(penaltyBPS),
       Buffer.from([20]), hexToBuffer(sbchAddr),
+      Buffer.from([ 8]), encodeBE8(expectedPrice),
     ]);
   }
 
@@ -98,10 +101,11 @@ export class HTLC {
     return new Contract(htlc5, args, this.wallet.network);
   }
 
-  async lock(toCashAddr: string,
-             toSbchAddr: string,
-             hashLock  : string,
-             amount    : number,
+  async lock(toCashAddr   : string,
+             toSbchAddr   : string,
+             hashLock     : string,
+             amount       : number,
+             expectedPrice: number,
              buildUnsigned = false) {
     const senderPkh = cashAddrToPkh(this.wallet.getDepositAddress());
     const recipientPkh = cashAddrToPkh(toCashAddr);
@@ -111,7 +115,7 @@ export class HTLC {
     console.log('hashLock    :', hashLock);
 
     const opRetData = HTLC.makeOpRetData(senderPkh, recipientPkh, hashLock,
-        this.expiration, this.penaltyBPS, toSbchAddr);
+        this.expiration, this.penaltyBPS, toSbchAddr, expectedPrice);
     console.log('opRetData   :', opRetData.toString('hex'));
 
     const reqs: any = [new SendRequest({
@@ -189,7 +193,7 @@ export class HTLC {
     }
     console.log('lockedUtxo:', lockedUtxo);
 
-    const penalty = Math.max(lockedUtxo.satoshis * this.penaltyBPS / 10000, 546);
+    const penalty = Math.max(Math.ceil(lockedUtxo.satoshis * this.penaltyBPS / 10000), 546);
     const refunded = lockedUtxo.satoshis - penalty - minerFee;
 
     const input = mnUtxoToCSUtxo(lockedUtxo);

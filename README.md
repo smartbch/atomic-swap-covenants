@@ -78,7 +78,7 @@ ts-node scripts/htlc.ts lock \
   --penalty-bps=500 \
   --amt=5000 \
   --sbch-addr=0x621e0B041D19B6472B1e991fE53D78aF3C264FA8 \
-  --miner-fee=1000 \
+  --expected-price=1.0 \
   --unsigned=true
 ```
 

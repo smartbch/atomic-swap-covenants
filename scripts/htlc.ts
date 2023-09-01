@@ -51,12 +51,13 @@ yargs(hideBin(process.argv))
       .option('penalty-bps',   {type: 'number', required: false, default: 500, description: 'penalty ratio, in BPS'})
       .option('sbch-addr',     {type: 'string', required: true,                description: '20-bytes, hex'        })
       .option('amt',           {type: 'number', required: true,                description: 'in sats'              })
-      .option('miner-fee',     {type: 'number', required: false, default:2000, description: 'in sats'              })
+      .option('expected-price',{type: 'number', required: false, default:1.0,  description: 'float number'         })
       .option('unsigned',      {type: 'boolean',required: false, default: false,                                   })
       ;
   }, async (argv: any) => {
+    const expectedPrice = Math.round(argv.expectedPrice * 1e8)
     await lock(argv.senderWif, argv.recipientAddr, argv.secret, argv.expiration, argv.penaltyBps, argv.sbchAddr,
-        argv.amt, argv.minerFee, argv.unsigned);
+        argv.amt, expectedPrice, argv.unsigned);
     process.exit(0);
   })
   .command('unlock', 'unlock BCH from HTLC', (yargs: any) => {
@@ -151,12 +152,12 @@ async function lock(senderWIF    : string,
                     penaltyBPS   : number,
                     sbchAddr     : string,
                     amt          : number,
-                    minerFee     : number,
+                    expectedPrice: number,
                     unsigned     : boolean) {
   const wallet = await _Wallet.fromWIF(senderWIF);
   const htlc = new HTLC(wallet, expiration, penaltyBPS);
   const hashLock = getHashLock(secret);
-  const result = await htlc.lock(recipientAddr, sbchAddr, hashLock, amt, unsigned);
+  const result = await htlc.lock(recipientAddr, sbchAddr, hashLock, amt, expectedPrice, unsigned);
   console.log('result:', result);
 }
 
